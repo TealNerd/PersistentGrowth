@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.civclassic.persistentgrowth</groupId>
   <artifactId>PeristentGrowth</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2-SNAPSHOT</version>
   
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -13,6 +13,10 @@
         <repository>
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>devoted</id>
+            <url>https://build.devotedmc.com/plugin/repository/everything/</url>
         </repository>
     </repositories>
     <dependencies>
@@ -25,7 +29,7 @@
         <dependency>
             <groupId>vg.civcraft.mc.civmodcore</groupId>
             <artifactId>CivModCore</artifactId>
-            <version>1.5.09</version>
+            <version>LATEST</version>
         </dependency>
     </dependencies>
     <build>

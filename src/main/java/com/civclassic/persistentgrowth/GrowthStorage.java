@@ -27,7 +27,7 @@ public class GrowthStorage {
 	private final String createChunkTable = "create table if not exists %s ("
 											+ "x int not null, "
 											+ "y int not null,"
-											+ " z int not null, "
+											+ "z int not null, "
 											+ "time bigint default 0,"
 											+ "unique key pos (x, y, z);";
 	private final String insertChunkPos = "insert into %s (x, y, z, time) values (?,?,?,?);";
@@ -41,7 +41,7 @@ public class GrowthStorage {
 	public void registerMigrations() {
 		db.registerMigration(0, false, 
 				"create table if not exists chunkidmap("
-				+ "id int auto increment,"
+				+ "id int unsigned primary key auto_increment,"
 				+ "x int not null,"
 				+ "z int not null,"
 				+ "world varchar(40) default '" + Bukkit.getWorlds().get(0).getUID().toString() + "');");
@@ -175,7 +175,7 @@ public class GrowthStorage {
 		}
 	}
 	
-	//only used for cactus and sugarcane
+	//used for cactus, sugarcan, melons, and pumpkins
 	public void resetTime(Block block) {
 		PersistentChunk chunk = new PersistentChunk(block.getChunk());
 		ChunkPos pos = new ChunkPos(block.getLocation());

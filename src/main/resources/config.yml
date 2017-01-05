@@ -22,8 +22,6 @@ drops:
     biomes:
       PLAINS: 0.01
 db:
-  ==: vg.civcraft.mc.civmodcore.dao.ManagedDatasource
-  plugin: PersistentGrowth
   user: ''
   password: ''
   host: localhost

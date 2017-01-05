@@ -5,7 +5,7 @@ import java.sql.SQLException;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import vg.civcraft.mc.civmodcore.ACivMod;
@@ -21,6 +21,8 @@ public class PersistentGrowth extends ACivMod {
 	public void onEnable() {
 		instance = this;
 		super.onEnable();
+		saveDefaultConfig();
+		reloadConfig();
 		setupDatabase();
 		if(!getServer().getPluginManager().isPluginEnabled(this)) return;
 		Config.load(getConfig());
@@ -29,10 +31,19 @@ public class PersistentGrowth extends ACivMod {
 	}
 	
 	public void setupDatabase() {
-		ConfigurationSerialization.registerClass(ManagedDatasource.class);
+		ConfigurationSection config = getConfig().getConfigurationSection("db");
+		String host = config.getString("host");
+		int port = config.getInt("port");
+		String user = config.getString("user");
+		String pass = config.getString("password");
+		String dbname = config.getString("database");
+		int poolsize = config.getInt("poolsize");
+		long connectionTimeout = config.getLong("connectionTimeout");
+		long idleTimeout = config.getLong("idleTimeout");
+		long maxLifetime = config.getLong("maxLifetime");
 		ManagedDatasource db = null;
 		try {
-			db = (ManagedDatasource) getConfig().get("db");
+			db = new ManagedDatasource(this, user, pass, host, port, dbname, poolsize, connectionTimeout, idleTimeout, maxLifetime);
 			db.getConnection().close();
 		} catch (SQLException e) {
 			warning("Could not connnect to database, stopping PersistentGrowth",  e);
@@ -46,6 +57,7 @@ public class PersistentGrowth extends ACivMod {
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
+		storage.load();
 		long saveTicks = 1728000 / getConfig().getConfigurationSection("db").getLong("savesPerDay", 64);
 		updateTask = new BukkitRunnable() {
 			public void run() {

@@ -1,5 +1,5 @@
 name: PersistentGrowth
-main: com.civclassic.persistentgrowth
+main: com.civclassic.persistentgrowth.PersistentGrowth
 version: ${project.version}
 depend: [CivModCore]
 commands:
