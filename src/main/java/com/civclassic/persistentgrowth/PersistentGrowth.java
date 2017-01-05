@@ -2,12 +2,9 @@ package com.civclassic.persistentgrowth;
 
 import java.sql.SQLException;
 
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.scheduler.BukkitRunnable;
-
 import vg.civcraft.mc.civmodcore.ACivMod;
 import vg.civcraft.mc.civmodcore.dao.ManagedDatasource;
 
@@ -16,7 +13,6 @@ public class PersistentGrowth extends ACivMod {
 	private static PersistentGrowth instance;
 	
 	private GrowthStorage storage;
-	private int updateTask = -1;
 	
 	public void onEnable() {
 		instance = this;
@@ -58,19 +54,10 @@ public class PersistentGrowth extends ACivMod {
 			return;
 		}
 		storage.load();
-		long saveTicks = 1728000 / getConfig().getConfigurationSection("db").getLong("savesPerDay", 64);
-		updateTask = new BukkitRunnable() {
-			public void run() {
-				storage.update();
-			}
-		}.runTaskTimerAsynchronously(this, saveTicks, saveTicks).getTaskId();
 	}
 	
 	public void onDisable() {
-		if(updateTask != -1) {
-			Bukkit.getScheduler().cancelTask(updateTask);
-			storage.update();
-		}
+		//storage.close();
 	}
 	
 	@Override

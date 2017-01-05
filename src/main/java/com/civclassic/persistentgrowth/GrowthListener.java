@@ -23,6 +23,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.CocoaPlant;
@@ -137,10 +139,23 @@ public class GrowthListener implements Listener {
 		}
 	}
 	
+	@EventHandler
+	public void onChunkLoad(ChunkLoadEvent event) {
+		storage.loadChunk(event.getChunk());
+	}
+	
+	@EventHandler
+	public void onChunkUnload(ChunkUnloadEvent event) {
+		storage.unloadChunk(event.getChunk());
+	}
+	
 	private void growChunk(Chunk chunk, Block clicked, Player player) {
-		Map<ChunkPos, Long> plants = storage.getPlantsForChunk(chunk);
-		for(ChunkPos pos : plants.keySet()) {
-			Block next = chunk.getBlock(pos.getX(), pos.getY(), pos.getZ());
+		Map<Integer, Long> plants = storage.getPlantsForChunk(chunk);
+		for(Integer pos : plants.keySet()) {
+			int y = pos >> 16;
+			int x = (pos >> 8) & 0xFF;
+			int z = pos & 0xFF;
+			Block next = chunk.getBlock(x, y, z);
 			if(next.getLocation().equals(clicked.getLocation())) {
 				growPlant(next, player);
 			} else {
@@ -219,7 +234,7 @@ public class GrowthListener implements Listener {
 			}
 			state.update(true, false);
 			if(PlantUtils.isFruitFul(state.getType()) || state.getType() == Material.CACTUS || state.getType() == Material.SUGAR_CANE_BLOCK) {
-				storage.resetTime(block);
+				storage.addPlant(block);
 			} else {
 				storage.removePlant(block);
 			}

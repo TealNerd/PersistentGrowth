@@ -31,4 +31,8 @@ db:
   connectionTimeout: 10000
   idleTimeout: 600000
   maxLifetime: 7200000
-  savesPerDay: 64
+  #how many ticks should we keep chunks cached after being unloaded
+  #lower number will result in more db calls
+  #higher number will result in more memory usage over time
+  #default is 10 minutes
+  cacheUnloadTime: 12000
