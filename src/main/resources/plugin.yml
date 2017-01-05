@@ -1,0 +1,9 @@
+name: PersistentGrowth
+main: com.civclassic.persistentgrowth
+version: ${project.version}
+depend: [CivModCore]
+commands:
+  persistentgrowth:
+    description: Reloads PersistentGrowth
+    usage: "Usage: /persistentgrowth"
+    permission: op

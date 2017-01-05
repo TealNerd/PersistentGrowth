@@ -1,0 +1,36 @@
+debug: false
+#requires full sunlight (allows for leaves) or adjacent glowstone
+requireSunlight: true
+#base grow time in ms
+baseGrowTime: 3600000
+plants:
+  wheat:
+    plant:
+      type: WHEAT
+    baseGrowthModifier: 1.0
+    biomes:
+      PLAINS: 0.8
+    drops:
+      - special_drop_wheat
+drops:
+  special_drop_wheat:
+    items:
+     - ==: org.bukkit.inventory.ItemStack
+       type: IRON_INGOT
+       amount: 1
+    chance: 0.0
+    biomes:
+      PLAINS: 0.01
+db:
+  ==: vg.civcraft.mc.civmodcore.dao.ManagedDatasource
+  plugin: PersistentGrowth
+  user: ''
+  password: ''
+  host: localhost
+  port: 3306
+  database: spigot
+  poolsize: 10
+  connectionTimeout: 10000
+  idleTimeout: 600000
+  maxLifetime: 7200000
+  savesPerDay: 64
