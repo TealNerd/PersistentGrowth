@@ -3,7 +3,6 @@ package com.civclassic.persistentgrowth;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -15,6 +14,7 @@ import org.bukkit.TreeType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -38,7 +38,7 @@ import org.bukkit.util.Vector;
 public class GrowthListener implements Listener {
 
 	private GrowthStorage storage;
-	private String messageFormat = "[PersistentGrowth] %s %s in %02d hours, %02d minutes, %02d seconds";
+	private String messageFormat = "[PersistentGrowth] %s %s in %s";
 	BlockFace[] surrounding = new BlockFace[]{BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.UP};
 	
 	public GrowthListener(GrowthStorage storage) {
@@ -76,6 +76,10 @@ public class GrowthListener implements Listener {
 	public void onPlayerInteract(PlayerInteractEvent event) {
 		if(event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			if(event.hasItem() && event.getItem().getType() == Material.INK_SACK && event.getItem().getDurability() == 15) {
+				if(Config.getForPlant(event.getClickedBlock().getState().getData()) != null) {
+					PersistentGrowth.instance().debug("Stopped {0} from using bonemeal on a plant at {1}", event.getPlayer(), event.getClickedBlock().getLocation());
+					event.setCancelled(true);
+				}
 				growChunk(event.getClickedBlock().getChunk(), event.getClickedBlock(), event.getPlayer());
 			}
 		} else if(event.getAction() == Action.LEFT_CLICK_BLOCK) {
@@ -90,7 +94,7 @@ public class GrowthListener implements Listener {
 						if(Config.requireSunlight() && !hasFullLight(event.getClickedBlock())) {
 							time = Long.MAX_VALUE;
 						}
-						sendPlayerMessage(event.getPlayer(), time, false, type.toString());
+						sendTimeMessage(event.getPlayer(), time, false, type.toString());
 					}
 				}
 			}
@@ -106,6 +110,7 @@ public class GrowthListener implements Listener {
 				Block at = plant.getRelative(BlockFace.DOWN);
 				if(at.getType() == plant.getType()) return; //not the bottom block of the cactus, dont worry about it
 			}
+			PersistentGrowth.instance().debug("Adding plant placed at {0} to database", event.getBlock().getLocation());
 			storage.addPlant(plant);
 		}
 	}
@@ -114,6 +119,7 @@ public class GrowthListener implements Listener {
 	public void onBlockBreak(BlockBreakEvent event) {
 		MaterialData data = event.getBlock().getState().getData();
 		if(Config.getForPlant(data) != null) {
+			PersistentGrowth.instance().debug("Removing plant at {0} from db because it was broken by {1}", event.getBlock().getLocation(), event.getPlayer());
 			storage.removePlant(event.getBlock());
 			boolean doDrops = false;
 			if(data instanceof Crops) {
@@ -127,6 +133,12 @@ public class GrowthListener implements Listener {
 				GrowthConfig config = Config.getForPlant(data);
 				DropConfig drop = config.getDrop(event.getBlock().getBiome().toString());
 				if(drop != null) {
+					if(Config.isDebug()) {
+						YamlConfiguration serial = new YamlConfiguration();
+						serial.set("Drops", drop.getDrops());
+						PersistentGrowth.instance().debug("Found for {0}, triggered by block break by {1}.\n{2}",
+								config.getPlant(), event.getPlayer(), serial.saveToString());
+					}
 					for(ItemStack item : drop.getDrops()) {
 						new BukkitRunnable() {
 							public void run() {
@@ -136,20 +148,30 @@ public class GrowthListener implements Listener {
 					}
 				}
 			}
+			//Handle adding growth back to the stem of pumpking/melons
+			if(PlantUtils.isFruit(data.getItemType())) {
+				Block stem = PlantUtils.getStem(event.getBlock(), data.getItemType());
+				if(stem != null) {
+					storage.addPlant(stem);
+				}
+			}
 		}
 	}
 	
 	@EventHandler
 	public void onChunkLoad(ChunkLoadEvent event) {
+		PersistentGrowth.instance().debug("Chunk loaded {0}", event.getChunk());
 		storage.loadChunk(event.getChunk());
 	}
 	
 	@EventHandler
 	public void onChunkUnload(ChunkUnloadEvent event) {
+		PersistentGrowth.instance().debug("Chunk unloaded {0}", event.getChunk());
 		storage.unloadChunk(event.getChunk());
 	}
 	
 	private void growChunk(Chunk chunk, Block clicked, Player player) {
+		PersistentGrowth.instance().debug("Growing chunk {0}, triggered by {1} at {2}", chunk, player, clicked.getLocation());
 		Map<Integer, Long> plants = storage.getPlantsForChunk(chunk);
 		for(Integer pos : plants.keySet()) {
 			int y = pos >> 16;
@@ -165,12 +187,14 @@ public class GrowthListener implements Listener {
 	}
 	
 	private void growPlant(Block block, Player player) {
+		PersistentGrowth.instance().debug("Growing plant at {0}", block.getLocation());
 		GrowthConfig config = Config.getForPlant(block.getState().getData());
 		if(PlantUtils.isFruitFul(block.getType()) && !PlantUtils.hasFruit(block)
 				&& ((Crops)block.getState().getData()).getState() == CropState.RIPE) {
 			config = Config.getForPlant(new MaterialData(PlantUtils.getFruit(block.getType())));
 		}
 		if(config == null) {
+			PersistentGrowth.instance().debug("Tried to grow plant without config, removing from database");
 			storage.removePlant(block);
 			return;
 		}
@@ -179,9 +203,11 @@ public class GrowthListener implements Listener {
 		long time = (long) (Config.getBaseGrowTime() * growthMod);
 		long remaining = time - (System.currentTimeMillis() - storage.getPlantedTime(block));
 		if(Config.requireSunlight() && !hasFullLight(block)) {
+			PersistentGrowth.instance().debug("Plant found with insufficient lighting");
 			remaining = Long.MAX_VALUE;
 		}
 		if(remaining <= 0) {
+			PersistentGrowth.instance().debug("Plant was fully grown, handling block update");
 			if(PlantUtils.isFruitFul(block.getType()) && !PlantUtils.hasFruit(block)
 					&&((Crops)block.getState().getData()).getState() == CropState.RIPE) {
 				PlantUtils.getFreeBlock(block).setType(PlantUtils.getFruit(block.getType()));
@@ -241,31 +267,13 @@ public class GrowthListener implements Listener {
 		}
 		if(player != null) {
 			long duration = remaining <= 0 ? time : remaining;
-			sendPlayerMessage(player, duration, remaining <= 0, config.getPlantType().toString());
+			sendTimeMessage(player, duration, remaining <= 0, config.getPlantType().toString());
 		}
 	}
 	
-	private void sendPlayerMessage(Player player, long duration, boolean grown, String plantType) {
-		String message = "";
-		if(grown) {
-			long hours = TimeUnit.MILLISECONDS.toHours(duration);
-			duration -= TimeUnit.HOURS.toMillis(hours);
-			long minutes = TimeUnit.MILLISECONDS.toMinutes(duration);
-			duration -= TimeUnit.MINUTES.toMillis(minutes);
-			long seconds = TimeUnit.MILLISECONDS.toSeconds(duration);
-			message = String.format(messageFormat,
-					plantType, "grew",
-					hours, minutes, seconds);
-		} else {
-			long hours = TimeUnit.MILLISECONDS.toHours(duration);
-			duration -= TimeUnit.HOURS.toMillis(hours);
-			long minutes = TimeUnit.MILLISECONDS.toMinutes(duration);
-			duration -= TimeUnit.MINUTES.toMillis(minutes);
-			long seconds = TimeUnit.MILLISECONDS.toSeconds(duration);
-			message = String.format(messageFormat, 
-					plantType, "will grow in",
-					hours, minutes, seconds);
-		}
+	private void sendTimeMessage(Player player, long duration, boolean grown, String plantType) {
+		String time = PersistentGrowth.formatTime(duration);
+		String message = String.format(messageFormat, plantType, grown ? "grew in" : "will grow in", time);
 		player.sendMessage(ChatColor.DARK_GRAY + message);
 	}
 	

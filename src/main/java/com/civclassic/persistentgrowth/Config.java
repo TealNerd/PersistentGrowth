@@ -23,6 +23,9 @@ public class Config {
 		isDebug = config.getBoolean("debug");
 		requireSunlight = config.getBoolean("requireSunlight");
 		baseGrowTime = config.getLong("baseGrowTime");
+		PersistentGrowth.instance().info("Debug %s", isDebug ? "enabled" : "disabled");
+		PersistentGrowth.instance().info("Base growth time: %s", PersistentGrowth.formatTime(baseGrowTime));
+		PersistentGrowth.instance().info("Sunlight or glowstone is %srequired", requireSunlight ? "" : "not ");
 		ConfigurationSection plants = config.getConfigurationSection("plants");
 		for(String key : plants.getKeys(false)) {
 			GrowthConfig plant = loadGrowthConfig(plants.getConfigurationSection(key));
@@ -56,6 +59,19 @@ public class Config {
 		if(config.contains("specialDrops")) {
 			drops = config.getStringList("specialDrops");
 		}
+		PersistentGrowth.instance().info("Loaded config for {0} with base growth modifier {1}", plant.toString(), growthModifier);
+		if(biomeModifiers.size() > 0) {
+			PersistentGrowth.instance().info("  Grows differently in these biomes:");
+			for(String biome : biomeModifiers.keySet()) {
+				PersistentGrowth.instance().info("    {0}: {1}%", biome, biomeModifiers.get(biome) * 100);
+			}
+		}
+		if(drops.size() > 0) {
+			PersistentGrowth.instance().info("  Drops:");
+			for(String drop : drops) {
+				PersistentGrowth.instance().info("    - {0}", drop);
+			}
+		}
 		return new GrowthConfig(plant, growthModifier, biomeModifiers, drops);
 	}
 	
@@ -68,6 +84,16 @@ public class Config {
 			ConfigurationSection biomes = config.getConfigurationSection("biomes");
 			for(String biome : biomes.getKeys(false)) {
 				biomeModifiers.put(biome, biomes.getDouble(biome));
+			}
+		}
+		PersistentGrowth.instance().info("Loaded drop config {0} with base chance of {1}", config.getName(), chance);
+		for(ItemStack item : items) {
+			PersistentGrowth.instance().info("  {0}", item.toString());
+		}
+		if(biomeModifiers.size() > 0) {
+			PersistentGrowth.instance().info("  Chance for special biomes:");
+			for(String biome : biomeModifiers.keySet()) {
+				PersistentGrowth.instance().info("    {0}: {1}%", biome, biomeModifiers.get(biome) * 100);
 			}
 		}
 		return new DropConfig(items, chance, biomeModifiers);

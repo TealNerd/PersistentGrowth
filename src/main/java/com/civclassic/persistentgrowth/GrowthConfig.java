@@ -70,4 +70,8 @@ public class GrowthConfig {
 	public List<String> getDrops() {
 		return drops;
 	}
+	
+	public double getBaseGrowthModifier() {
+		return growthModifier;
+	}
 }

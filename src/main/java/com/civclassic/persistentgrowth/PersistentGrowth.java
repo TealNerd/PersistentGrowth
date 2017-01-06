@@ -1,6 +1,7 @@
 package com.civclassic.persistentgrowth;
 
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -67,6 +68,15 @@ public class PersistentGrowth extends ACivMod {
 
 	public static PersistentGrowth instance() {
 		return instance;
+	}
+	
+	public static String formatTime(long millis) {
+		long hours = TimeUnit.MILLISECONDS.toHours(millis);
+		millis -= TimeUnit.HOURS.toMillis(hours);
+		long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+		millis -= TimeUnit.MINUTES.toMillis(minutes);
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+		return String.format("%d hours, %d minutes, %d seconds", hours, minutes, seconds);
 	}
 	
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {

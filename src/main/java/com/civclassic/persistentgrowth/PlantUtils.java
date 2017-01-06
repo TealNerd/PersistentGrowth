@@ -196,4 +196,13 @@ public class PlantUtils {
 			return null;
 		}
 	}
+	
+	public static Block getStem(Block block, Material fruit) {
+		Material stem = getStem(fruit);
+		for(BlockFace face : surroundingBlocks) {
+			Block candidate = block.getRelative(face);
+			if(candidate.getType() == stem)  return candidate;
+		}
+		return null;
+	}
 }
